@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tarla parseli (köşe noktalı çokgen) + başak -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#33F4C542" android:strokeColor="#F4C542" android:strokeWidth="3"
+        android:strokeLineJoin="round"
+        android:pathData="M30,40 L70,30 L80,70 L36,78 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M30,40 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M70,30 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M80,70 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M36,78 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.2" android:strokeLineCap="round"
+        android:fillColor="#00000000" android:pathData="M55,70 L55,42" />
+    <path android:fillColor="#F4C542" android:pathData="M55,42 q-5,-5 0,-12 q5,7 0,12z" />
+    <path android:fillColor="#F4C542" android:pathData="M55,50 q-9,-1 -9,-9 q8,1 9,9z" />
+    <path android:fillColor="#F4C542" android:pathData="M55,50 q9,-1 9,-9 q-8,1 -9,9z" />
+    <path android:fillColor="#F4C542" android:pathData="M55,59 q-9,-1 -9,-9 q8,1 9,9z" />
+    <path android:fillColor="#F4C542" android:pathData="M55,59 q9,-1 9,-9 q-8,1 -9,9z" />
+</vector>
