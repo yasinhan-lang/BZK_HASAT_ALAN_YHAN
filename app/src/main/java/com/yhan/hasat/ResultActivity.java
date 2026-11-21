@@ -30,7 +30,7 @@ public class ResultActivity extends Activity {
     private TextView nameText, dateText, areaDonum, areaM2, sigmaText, tablaText;
     private Switch marginSw;
     private TextView methodIz, methodKose;
-    private LinearLayout methodRow, notesCard, details;
+    private LinearLayout methodRow, notesCard, details, tablaRow;
     private FieldView field;
 
     @Override
@@ -53,7 +53,7 @@ public class ResultActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.BG);
         root.setFitsSystemWindows(true);
-        root.addView(Ui.header(this, "Ölçüm Sonucu", "BozokluHAN Hasat Alan Ölçer"));
+        root.addView(Ui.header(this, "SONUÇ"));
 
         ScrollView sv = new ScrollView(this);
         LinearLayout c = new LinearLayout(this);
@@ -91,13 +91,14 @@ public class ResultActivity extends Activity {
         // ayarlar
         LinearLayout set = Ui.card(this);
         marginSw = new Switch(this);
-        marginSw.setText("Tabla payını ekle (makine izinden tarla sınırına)");
+        marginSw.setText("Biçerdöver tabla payını ekle");
         marginSw.setTextSize(14);
         marginSw.setTextColor(Ui.INK);
         marginSw.setChecked(o.margin);
         marginSw.setOnCheckedChangeListener((v, on) -> { o.margin = on; recompute(); });
         set.addView(marginSw);
         LinearLayout tr = Ui.row(this);
+        tablaRow = tr;
         tr.setPadding(0, dp(10), 0, 0);
         tr.addView(Ui.text(this, "Tabla genişliği", 14, Ui.INK, true), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
         TextView minus = Ui.button(this, "−", Ui.GOLD_S, Ui.INK, 20);
@@ -131,7 +132,7 @@ public class ResultActivity extends Activity {
         LinearLayout.LayoutParams fp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(330));
         fp.setMargins(dp(14), dp(10), dp(14), 0);
         c.addView(field, fp);
-        TextView legend = Ui.text(this, "Sarı: tarla sınırı  ·  kesikli yeşil: makine izi  ·  beyaz: GPS yolu  ·  yeşil nokta: başlangıç", 11.5f, Ui.SUB, false);
+        TextView legend = Ui.text(this, "Sarı: alan sınırı  ·  beyaz: GPS yolu  ·  yeşil nokta: başlangıç", 11.5f, Ui.SUB, false);
         legend.setGravity(Gravity.CENTER);
         legend.setPadding(dp(14), dp(4), dp(14), 0);
         c.addView(legend);
@@ -183,9 +184,9 @@ public class ResultActivity extends Activity {
         try { Store.save(this, o); } catch (Exception ignored) { }
 
         nameText.setText((o.name.isEmpty() ? "İsimsiz tarla" : o.name) + "  ✎");
-        dateText.setText(Fmt.date(o.created) + "  ·  " + (o.corner ? "Köşe noktaları" : "İz (kenar turu)"));
+        dateText.setText(Fmt.date(o.created) + "  ·  " + (o.corner ? "Köşe noktaları" : Store.modeName(o.mode)));
         tablaText.setText(Fmt.num(o.tabla, 1) + " m");
-        tablaText.setAlpha(o.margin ? 1f : 0.4f);
+        tablaRow.setVisibility(o.margin ? View.VISIBLE : View.GONE);
         methodRow.setVisibility(hasTrack && hasCorners ? View.VISIBLE : View.GONE);
         methodIz.setBackground(Ui.round(this, o.corner ? Ui.GREEN_S : Ui.GREEN, 16));
         methodIz.setTextColor(o.corner ? Ui.GREEN : 0xFFFFFFFF);
@@ -222,8 +223,10 @@ public class ResultActivity extends Activity {
         }
 
         details.addView(Ui.text(this, "Ayrıntılar", 14, Ui.GREEN, true));
-        Ui.stat(this, details, "Makine izi alanı")[1].setText(Fmt.m2(r.izArea) + " m²");
-        Ui.stat(this, details, "Tabla payıyla eklenen")[1].setText(Fmt.m2(r.fieldArea - r.izArea) + " m²");
+        if (r.margin > 0) {
+            Ui.stat(this, details, "Makine izi alanı")[1].setText(Fmt.m2(r.izArea) + " m²");
+            Ui.stat(this, details, "Tabla payıyla eklenen")[1].setText(Fmt.m2(r.fieldArea - r.izArea) + " m²");
+        }
         Ui.stat(this, details, "Tarla çevresi")[1].setText(Fmt.num(r.fieldPerim, 1) + " m");
         if (r.closure >= 0) Ui.stat(this, details, "Kapanma hatası (dağıtıldı)")[1].setText(Fmt.num(r.closure, 1) + " m");
         Ui.stat(this, details, o.corner ? "Köşe sayısı" : "Kullanılan iz noktası")[1].setText(String.valueOf(r.nPoints));
@@ -232,7 +235,7 @@ public class ResultActivity extends Activity {
 
         FieldView.Data d = new FieldView.Data();
         d.path = r.trackXY;
-        d.iz = r.izXY;
+        if (r.margin > 0) d.iz = r.izXY;
         d.closeIz = true;
         d.field = r.fieldXY;
         if (o.corner) for (double[] k : o.corners) d.corners.add(r.proj.fwd(k[0], k[1]));
@@ -344,7 +347,7 @@ public class ResultActivity extends Activity {
         p.setColor(0xFFFFFFFF);
         p.setTypeface(Typeface.DEFAULT_BOLD);
         p.setTextSize(34);
-        c.drawText("Hasat Alan Ölçümü", W / 2f, 116, p);
+        c.drawText("ALAN ÖLÇÜMÜ", W / 2f, 116, p);
 
         p.setColor(0xFF1F2A22);
         p.setTextSize(46);
@@ -352,7 +355,7 @@ public class ResultActivity extends Activity {
         p.setTypeface(Typeface.DEFAULT);
         p.setColor(0xFF7D857F);
         p.setTextSize(30);
-        c.drawText(Fmt.date(o.created) + "  ·  " + (o.corner ? "Köşe noktaları" : "İz (kenar turu)"), W / 2f, 272, p);
+        c.drawText(Fmt.date(o.created) + "  ·  " + (o.corner ? "Köşe noktaları" : Store.modeName(o.mode)), W / 2f, 272, p);
 
         p.setColor(0xFF1F5C3A);
         p.setTypeface(Typeface.DEFAULT_BOLD);
@@ -371,7 +374,7 @@ public class ResultActivity extends Activity {
 
         FieldView.Data d = new FieldView.Data();
         d.path = r.trackXY;
-        d.iz = r.izXY;
+        if (r.margin > 0) d.iz = r.izXY;
         d.closeIz = true;
         d.field = r.fieldXY;
         if (o.corner) for (double[] q : o.corners) d.corners.add(r.proj.fwd(q[0], q[1]));
@@ -379,7 +382,7 @@ public class ResultActivity extends Activity {
 
         p.setColor(0xFF7D857F);
         p.setTextSize(24);
-        c.drawText("Bzk.Hasat · © 2026 Yasin HAN · Tüm hakları saklıdır.", W / 2f, H - 50, p);
+        c.drawText("BozokluHAN ALAN ÖLÇER · © 2026 Yasin HAN · Tüm hakları saklıdır.", W / 2f, H - 50, p);
         return b;
     }
 }

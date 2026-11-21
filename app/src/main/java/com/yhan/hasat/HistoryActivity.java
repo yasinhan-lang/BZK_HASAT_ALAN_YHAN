@@ -23,7 +23,7 @@ public class HistoryActivity extends Activity {
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(Ui.BG);
         root.setFitsSystemWindows(true);
-        root.addView(Ui.header(this, "Ölçümler", "Kayıtlı tarla alanları"));
+        root.addView(Ui.header(this, "ÖLÇÜMLER"));
         ScrollView sv = new ScrollView(this);
         list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
@@ -56,7 +56,7 @@ public class HistoryActivity extends Activity {
             LinearLayout left = new LinearLayout(this);
             left.setOrientation(LinearLayout.VERTICAL);
             left.addView(Ui.text(this, o.name.isEmpty() ? "İsimsiz tarla" : o.name, 16, Ui.INK, true));
-            left.addView(Ui.text(this, Fmt.date(o.created) + " · " + (o.corner ? "Köşe" : "İz"), 12.5f, Ui.SUB, false));
+            left.addView(Ui.text(this, Fmt.date(o.created) + " · " + Store.modeName(o.mode), 12.5f, Ui.SUB, false));
             r.addView(left, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
             LinearLayout right = new LinearLayout(this);
             right.setOrientation(LinearLayout.VERTICAL);

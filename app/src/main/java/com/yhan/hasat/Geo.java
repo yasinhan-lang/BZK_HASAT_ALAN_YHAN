@@ -241,6 +241,39 @@ public final class Geo {
         return (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
     }
 
+    /**
+     * Gürültü azaltma: her nokta, ±2 komşusuyla doğruluğa (1/σ²) ve sıraya (Gauss) göre ağırlıklı
+     * ortalanır. Uçlar ve keskin köşeler korunur (köşede komşu ağırlığı azaltılır).
+     */
+    static List<double[]> smooth(List<double[]> p, double[] acc) {
+        int n = p.size();
+        List<double[]> out = new ArrayList<>(n);
+        double[] g = {1.0, 0.6, 0.2};
+        for (int i = 0; i < n; i++) {
+            if (i == 0 || i == n - 1) { out.add(p.get(i)); continue; }
+            // köşe tespiti: i-2→i ile i→i+2 arasındaki dönüş açısı
+            double turn = 0;
+            if (i >= 2 && i + 2 < n) {
+                double[] a = p.get(i - 2), b = p.get(i), c = p.get(i + 2);
+                double a1 = Math.atan2(b[1] - a[1], b[0] - a[0]), a2 = Math.atan2(c[1] - b[1], c[0] - b[0]);
+                turn = Math.abs(Math.atan2(Math.sin(a2 - a1), Math.cos(a2 - a1)));
+            }
+            double keep = turn > Math.toRadians(35) ? 0.15 : 1.0;
+            double sx = 0, sy = 0, sw = 0;
+            for (int k = -2; k <= 2; k++) {
+                int j = i + k;
+                if (j < 0 || j >= n) continue;
+                double s = Math.max(0.5, acc[Math.min(j, acc.length - 1)]);
+                double w = g[Math.abs(k)] / (s * s) * (k == 0 ? 1 : keep);
+                sx += p.get(j)[0] * w;
+                sy += p.get(j)[1] * w;
+                sw += w;
+            }
+            out.add(new double[]{sx / sw, sy / sw});
+        }
+        return out;
+    }
+
     // ------------------------------------------------------------------ tur kapanması
 
     static final class Loop {
@@ -343,7 +376,9 @@ public final class Geo {
             r.sigma = Math.sqrt(v);
             r.nPoints = n;
         } else {
-            List<double[]> t = dedupe(r.trackXY, 0.3);
+            double[] accs = new double[track.size()];
+            for (int i = 0; i < accs.length; i++) accs[i] = track.get(i)[2];
+            List<double[]> t = dedupe(smooth(r.trackXY, accs), 0.3);
             double L = perimeter(t, false);
             if (t.size() < 10 || L < 40) {
                 r.error = "İz çok kısa (" + Math.round(L) + " m). Tarlanın etrafını tam dönün.";

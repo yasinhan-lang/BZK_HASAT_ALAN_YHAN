@@ -46,13 +46,13 @@ final class Notif {
         if (Session.state == Session.PAUSED) {
             txt = "Duraklatıldı";
         } else if (Session.cornerMode) {
-            txt = Session.corners.size() + " köşe · " + Fmt.donum(Session.liveArea(false)) + " dönüm";
+            txt = Session.corners.size() + " köşe · " + Fmt.donum(Session.liveArea()) + " dönüm";
         } else {
-            txt = Fmt.m(Session.pathLen) + " yol · ≈ " + Fmt.donum(Session.liveArea(true)) + " dönüm";
+            txt = Fmt.m(Session.pathLen) + " yol · ≈ " + Fmt.donum(Session.liveArea()) + " dönüm";
         }
         return new Notification.Builder(c, CH_ON)
                 .setSmallIcon(R.drawable.ic_stat)
-                .setContentTitle("Bzk.Hasat · alan ölçülüyor")
+                .setContentTitle("ALAN ÖLÇER · ölçüm sürüyor")
                 .setContentText(txt)
                 .setColor(0xFF1F5C3A)
                 .setOngoing(true)
@@ -89,6 +89,31 @@ final class Notif {
                 .setColor(0xFFE0A526)
                 .setAutoCancel(true)
                 .setContentIntent(open(c))
+                .build());
+    }
+
+    static final int ID_DONE = 5103;
+
+    /** Ölçüm bitti: alanı bildirimle göster, dokununca sonuç açılır. */
+    static void finished(Context c, Store.Olcum o, boolean auto) {
+        vibrate(c, new long[]{0, 250, 120, 250, 120, 500});
+        tone(ToneGenerator.TONE_PROP_ACK);
+        if (!allowed(c)) return;
+        ensure(c);
+        NotificationManager nm = c.getSystemService(NotificationManager.class);
+        if (nm == null) return;
+        nm.cancel(ID_ALERT);
+        Intent i = new Intent(c, ResultActivity.class).putExtra("id", o.id)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        PendingIntent pi = PendingIntent.getActivity(c, 1, i, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        String area = o.area >= 0 ? Fmt.donum(o.area) + " dönüm  ·  " + Fmt.m2(o.area) + " m²" : "Sonucu görmek için dokunun";
+        nm.notify(ID_DONE, new Notification.Builder(c, CH_ALERT)
+                .setSmallIcon(R.drawable.ic_stat)
+                .setContentTitle(auto ? "Başlangıca dönüldü · alan hesaplandı" : "Alan hesaplandı")
+                .setContentText(area)
+                .setColor(0xFF1F5C3A)
+                .setAutoCancel(true)
+                .setContentIntent(pi)
                 .build());
     }
 

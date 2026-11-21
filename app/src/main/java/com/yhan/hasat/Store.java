@@ -22,17 +22,18 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
-/** Ölçümlerin kaydı ve dışa aktarma (İndirilenler/BozokluHAN Hasat). */
+/** Ölçümlerin kaydı ve dışa aktarma (İndirilenler/BozokluHAN Alan Olcer). */
 final class Store {
     private Store() {}
 
-    static final String FOLDER = "BozokluHAN Hasat";
+    static final String FOLDER = "BozokluHAN Alan Olcer";
 
     /** Kayıtlı bir ölçüm. */
     static final class Olcum {
         String id, name = "";
         long created;
         boolean corner, margin = true;
+        int mode = Prefs.YAYA;
         double tabla = 6, area = -1;
         final List<double[]> track = new ArrayList<>();
         final List<double[]> corners = new ArrayList<>();
@@ -89,6 +90,7 @@ final class Store {
         j.put("ad", o.name);
         j.put("tarih", o.created);
         j.put("kose", o.corner);
+        j.put("mod", o.mode);
         j.put("pay", o.margin);
         j.put("tabla", o.tabla);
         j.put("alan", o.area);
@@ -111,6 +113,7 @@ final class Store {
             o.name = j.optString("ad", "");
             o.created = j.optLong("tarih");
             o.corner = j.optBoolean("kose");
+            o.mode = j.optInt("mod", o.corner ? Prefs.KOSE : Prefs.BICERDOVER);
             o.margin = j.optBoolean("pay", true);
             o.tabla = j.optDouble("tabla", 6);
             o.area = j.optDouble("alan", -1);
@@ -150,7 +153,8 @@ final class Store {
         o.id = Fmt.fileStamp(o.created) + "_" + Long.toString(System.currentTimeMillis() % 100000, 36);
         o.name = name;
         o.corner = Session.cornerMode;
-        o.margin = true;
+        o.mode = Session.mode;
+        o.margin = Session.mode == Prefs.BICERDOVER;
         o.tabla = Session.tabla;
         o.track.addAll(Session.track);
         o.corners.addAll(Session.corners);
@@ -200,6 +204,10 @@ final class Store {
         return u;
     }
 
+    static String modeName(int m) {
+        return m == Prefs.KOSE ? "Köşe noktaları" : m == Prefs.BICERDOVER ? "Biçerdöver (kenar turu)" : "Yaya (yürüyerek)";
+    }
+
     private static String esc(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
@@ -247,11 +255,11 @@ final class Store {
 
     static String report(Olcum o, Geo.Result r) {
         StringBuilder sb = new StringBuilder();
-        sb.append("BozokluHAN Hasat Alan Ölçer\r\n");
-        sb.append("===========================\r\n");
+        sb.append("BozokluHAN ALAN ÖLÇER\r\n");
+        sb.append("=====================\r\n");
         sb.append("Tarla          : ").append(o.name.isEmpty() ? "-" : o.name).append("\r\n");
         sb.append("Tarih          : ").append(Fmt.date(o.created)).append("\r\n");
-        sb.append("Yöntem         : ").append(o.corner ? "Köşe noktaları" : "İz (kenar turu)").append("\r\n");
+        sb.append("Yöntem         : ").append(modeName(o.mode)).append("\r\n");
         sb.append("TARLA ALANI    : ").append(Fmt.m2(r.fieldArea)).append(" m²  =  ").append(Fmt.donum(r.fieldArea)).append(" dönüm\r\n");
         sb.append("Tahmini hata   : ± ").append(Fmt.num(r.sigma, 0)).append(" m²\r\n");
         sb.append("Makine izi alanı: ").append(Fmt.m2(r.izArea)).append(" m²\r\n");

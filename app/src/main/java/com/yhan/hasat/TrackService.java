@@ -62,7 +62,7 @@ public class TrackService extends Service implements LocationListener {
             running = true;
             lm = getSystemService(LocationManager.class);
             try {
-                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000L, 0f, this, Looper.getMainLooper());
+                lm.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500L, 0f, this, Looper.getMainLooper());
                 lm.registerGnssStatusCallback(gnss, h);
             } catch (SecurityException e) {
                 Session.message("Konum izni yok.");

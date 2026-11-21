@@ -24,8 +24,16 @@ public class FieldView extends View {
         double[] current;
         double currentAcc;
         boolean closeIz;
+        /** Başlangıç noktasının etrafına "dokun → bitir" halkası çiz. */
+        boolean highlightStart;
         String label;
     }
+
+    interface OnStartTap { void onStartTap(); }
+
+    private OnStartTap tapListener;
+    private float[] startPos;
+    private float downX, downY;
 
     private Data data = new Data();
     private final float d;
@@ -35,6 +43,31 @@ public class FieldView extends View {
         d = c.getResources().getDisplayMetrics().density;
     }
 
+    void setOnStartTap(OnStartTap l) { tapListener = l; }
+
+    @Override
+    public boolean onTouchEvent(android.view.MotionEvent e) {
+        if (tapListener == null) return super.onTouchEvent(e);
+        switch (e.getActionMasked()) {
+            case android.view.MotionEvent.ACTION_DOWN:
+                downX = e.getX();
+                downY = e.getY();
+                return true;
+            case android.view.MotionEvent.ACTION_UP:
+                if (Math.hypot(e.getX() - downX, e.getY() - downY) < 24 * d && startPos != null
+                        && Math.hypot(e.getX() - startPos[0], e.getY() - startPos[1]) < 40 * d) {
+                    performClick();
+                    tapListener.onStartTap();
+                }
+                return true;
+            default:
+                return true;
+        }
+    }
+
+    @Override
+    public boolean performClick() { return super.performClick(); }
+
     void setData(Data x) {
         data = x;
         invalidate();
@@ -42,13 +75,17 @@ public class FieldView extends View {
 
     @Override
     protected void onDraw(Canvas c) {
-        render(c, new RectF(0, 0, getWidth(), getHeight()), data, d);
+        startPos = render(c, new RectF(0, 0, getWidth(), getHeight()), data, d);
+        if (data.highlightStart && startPos != null) postInvalidateDelayed(40);
     }
 
-    static void render(Canvas c, RectF box, Data x, float d) {
+    /** Çizer; başlangıç noktasının ekran konumunu döndürür (yoksa null). */
+    static float[] render(Canvas c, RectF box, Data x, float d) {
+        float[] startOut = null;
         Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bg.setColor(0xFF24392C);
-        c.drawRoundRect(box, 18 * d, 18 * d, bg);
+        bg.setShader(new android.graphics.LinearGradient(box.left, box.top, box.right, box.bottom,
+                0xFF2F5A40, 0xFF15261C, android.graphics.Shader.TileMode.CLAMP));
+        c.drawRoundRect(box, 24 * d, 24 * d, bg);
 
         // ince ızgara
         Paint grid = new Paint();
@@ -75,7 +112,7 @@ public class FieldView extends View {
         if (minX > maxX) {
             c.drawText(x.label != null ? x.label : "Kayıt başlayınca kroki burada çizilir",
                     box.centerX(), box.centerY(), txt);
-            return;
+            return null;
         }
         double span = Math.max(Math.max(maxX - minX, maxY - minY), 30);
         float pad = 26 * d;
@@ -137,14 +174,26 @@ public class FieldView extends View {
             c.drawCircle(px, py, 9 * d, kp);
             c.drawText(String.valueOf(i + 1), px, py + 3.5f * d, kt);
         }
-        // başlangıç noktası
-        if (!x.path.isEmpty()) {
-            double[] q = x.path.get(0);
-            float px = (float) (ox + (q[0] - cx) * s), py = (float) (oy - (q[1] - cy) * s);
-            kp.setColor(0xFFFFFFFF);
-            c.drawCircle(px, py, 6 * d, kp);
-            kp.setColor(0xFF22A565);
-            c.drawCircle(px, py, 4 * d, kp);
+        // başlangıç noktası (köşe modunda ilk köşe)
+        double[] sq = !x.path.isEmpty() ? x.path.get(0) : (!x.corners.isEmpty() ? x.corners.get(0) : null);
+        if (sq != null) {
+            float px = (float) (ox + (sq[0] - cx) * s), py = (float) (oy - (sq[1] - cy) * s);
+            startOut = new float[]{px, py};
+            if (x.highlightStart) {
+                float ph = (android.os.SystemClock.uptimeMillis() % 1400) / 1400f;
+                Paint ring = new Paint(Paint.ANTI_ALIAS_FLAG);
+                ring.setStyle(Paint.Style.STROKE);
+                ring.setStrokeWidth(2.5f * d);
+                ring.setColor(0xFF7FD69A);
+                ring.setAlpha((int) (255 * (1 - ph)));
+                c.drawCircle(px, py, (10 + 22 * ph) * d, ring);
+            }
+            if (!x.path.isEmpty()) {
+                kp.setColor(0xFFFFFFFF);
+                c.drawCircle(px, py, 7 * d, kp);
+                kp.setColor(0xFF22A565);
+                c.drawCircle(px, py, 5 * d, kp);
+            }
         }
         // anlık konum
         if (x.current != null) {
@@ -182,6 +231,7 @@ public class FieldView extends View {
         c.drawLine(bx + bl, by - 4 * d, bx + bl, by + 1 * d, sp);
         txt.setTextAlign(Paint.Align.LEFT);
         c.drawText((int) len + " m", bx + bl + 6 * d, by + 4 * d, txt);
+        return startOut;
     }
 
     private static Path path(List<double[]> l, boolean close, double s, double cx, double cy, float ox, float oy) {
